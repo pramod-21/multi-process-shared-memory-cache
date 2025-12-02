@@ -13,7 +13,7 @@
 typedef struct {
     char value[VALUE_SIZE];
     int key;
-    int valid;   //0 for empty, 1 for used
+    int valid;   //0 for invalid, 1 for valid
     int lru_counter;  //for LRU
 } Cache_Entry;
 
@@ -22,12 +22,6 @@ typedef struct {
     sem_t mutex;  //semaphore for synchronization
     int initialized; //avoid re-initialization by each process
 }Shared_Cache;
-
-//shared memory functions
-int cache_shm_create();
-Shared_Cache* cache_shm_attach(int shmid);
-int cache_shm_detach(Shared_Cache* cache);
-int cache_shm_destroy(int shmid);
 
 //cache operations
 void cache_init(Shared_Cache* cache);
