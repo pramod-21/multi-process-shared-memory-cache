@@ -26,7 +26,7 @@ typedef struct {
 //cache operations
 void cache_init(Shared_Cache* cache);
 int cache_put(Shared_Cache* cache, int key, const char* value);
-int cache_get(Shared_Cache* cache, int key);
+int cache_get(Shared_Cache* cache, int key, char* out_value);
 int cache_evict(Shared_Cache* cache); //evicting based on LRU
 
 

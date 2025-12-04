@@ -13,7 +13,7 @@ int main()
         perror("shmget (reader) failed");
         exit(1);
     }
-    
+
     Shared_Cache *cache = (Shared_Cache *)shared_memory_attach(shmid);
     if (cache == (void *)-1)
     {
@@ -28,7 +28,7 @@ int main()
         int key;
         char out[VALUE_SIZE];
 
-        printf("\nEnter key to read (int): ");
+        printf("\nEnter key to read (int) or -1 to exit: ");
         if (scanf("%d", &key) != 1)
         {
             int c;
@@ -36,6 +36,11 @@ int main()
             {
             }
             continue;
+        }
+        if (key == -1)
+        {
+            printf("reader %d exiting...\n", getpid());
+            break;
         }
 
         int hit = cache_get(cache, key, out);
@@ -50,5 +55,6 @@ int main()
 
         sleep(1);
     }
+    shared_memory_detach(cache);
     return 0;
 }

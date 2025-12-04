@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 void cache_lock(Shared_Cache *cache) {
     sem_wait(&cache->mutex);
@@ -12,8 +13,11 @@ void cache_unlock(Shared_Cache *cache) {
 }
 
 void cache_init(Shared_Cache* cache) {
+    if (cache == NULL) {
+        return;
+    }
     if(cache->initialized == 1) {
-        return; //do nothing just exit because already initialized
+        return; //do nothing just exit, because cache already initialized
     }
 
     sem_init(&cache->mutex, 1, 1); //initialize semaphore for synchronization
@@ -24,6 +28,8 @@ void cache_init(Shared_Cache* cache) {
         for(int i = 0; i < CACHE_SIZE; i++) {
             cache->entries[i].valid = 0; //marks entries as invalid/empty
             cache->entries[i].lru_counter = 0; //initializing LRU counter
+            cache->entries[i].key = 0;
+            cache->entries[i].value[0] = '\0';
         }
         cache->initialized = 1; //mark as initialized
     }
@@ -33,7 +39,7 @@ void cache_init(Shared_Cache* cache) {
 
 int cache_evict(Shared_Cache* cache) {
     int lru_index = -1;
-    int min_lru = 999999;
+    int min_lru = INT_MAX;
 
     for (int i = 0; i < CACHE_SIZE; i++) {
         if (cache->entries[i].valid == 1 &&
@@ -62,7 +68,7 @@ int cache_put(Shared_Cache* cache, int key, const char* value) {
     //updating existing entry
     for(int i = 0; i < CACHE_SIZE; i++) {
         if(cache->entries[i].valid == 1 && cache->entries[i].key == key) {
-            strcpy(cache->entries[i].value, value);
+            snprintf(cache->entries[i].value, VALUE_SIZE, "%s", value);
             cache->entries[i].lru_counter++;
             cache_unlock(cache);
             return 2; //updated existing entry
@@ -74,7 +80,7 @@ int cache_put(Shared_Cache* cache, int key, const char* value) {
         if(cache->entries[i].valid == 0) {
             cache->entries[i].valid = 1;
             cache->entries[i].key = key;
-            strcpy(cache->entries[i].value, value);
+            snprintf(cache->entries[i].value, VALUE_SIZE, "%s", value);
             cache->entries[i].lru_counter = 1;
             cache_unlock(cache);
             return 1; //inserted new entry
@@ -96,18 +102,21 @@ int cache_put(Shared_Cache* cache, int key, const char* value) {
     return -1; //cache full and eviction failed
 }
 
-int cache_get(Shared_Cache* cache, int key) {
+int cache_get(Shared_Cache* cache, int key, char* out_value) {
+    if(!cache || !out_value) {
+        return 0; //invalid parameters
+    }
     cache_lock(cache);
 
     for(int i = 0; i < CACHE_SIZE; i++) {
         if(cache->entries[i].valid == 1 && cache->entries[i].key == key) {
             cache->entries[i].lru_counter++;
-            printf("Value: %s\n", cache->entries[i].value);
+            snprintf(out_value, VALUE_SIZE, "%s", cache->entries[i].value);
             cache_unlock(cache);
-            return 0; //Hit(found)
+            return 1; //Hit(found)
         }
     }
 
     cache_unlock(cache);
-    return -1; //Miss(not found)
+    return 0; //Miss(not found)
 }

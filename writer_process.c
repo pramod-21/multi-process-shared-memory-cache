@@ -11,11 +11,17 @@ int main()
 {
     srand(time(NULL) ^ getpid());
 
-    int shmid = shared_memory_create();
-    Shared_Cache *cache = (Shared_Cache *)shared_memory_attach(shmid);
-    if (cache == NULL)
+    int shmid = shmget(SHARED_MEMORY_KEY, 0, 0666);
+    if (shmid < 0)
     {
-        printf("Writer : %d Failed to attach shared memory\n", getpid());
+        perror("shmget (reader) failed");
+        exit(1);
+    }
+
+    Shared_Cache *cache = (Shared_Cache *)shared_memory_attach(shmid);
+    if (cache == (void *)-1)
+    {
+        fprintf(stderr, "Writer : %d Failed to attach shared memory\n", getpid());
         exit(1);
     }
     cache_init(cache); // initialize the cache if already not initialized
@@ -28,14 +34,36 @@ int main()
         int key;
         char value[VALUE_SIZE];
 
-        printf("\nEnter key (int): ");
-        scanf("%d", &key);
+        printf("\nEnter key (int) or -1 to exit: ");
+        if (scanf("%d", &key) != 1)
+        {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF)
+            {
+            }
+            continue;
+        }
+        if (key == -1)
+        {
+            printf("Writer %d exiting...\n", getpid());
+            break;
+        }
 
         printf("Enter value (string): ");
-        scanf("%s", value);
+        if (scanf("%255s", value) != 1)
+        {
+            int c;
+            while ((c = getchar()) != '\n' && c != EOF)
+            {
+            }
+            continue;
+        }
 
         int result = cache_put(cache, key, value);
-
+        /*1 for insert
+          2 for update
+          3 for evict and insert
+        */
         if (result == 1)
         {
             printf("[Writer %d]: Inserted key=%d, value=%s\n", getpid(), key, value);
@@ -52,8 +80,9 @@ int main()
         {
             printf("[Writer %d]: Failed to insert key=%d, value=%s\n", getpid(), key, value);
         }
+
         sleep(1);
     }
-
+    shared_memory_detach(cache);
     return 0;
 }
