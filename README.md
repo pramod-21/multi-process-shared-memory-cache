@@ -193,7 +193,14 @@ gcc reader_process.c memory-cache/memory_cache.c memory-cache/shared_memory_mana
 ./reader_process
 
 ## Output
+- Main process
+![main process output](images/main.png)
 
+- Writer process
+![writer process output](images/writer_process.png)
+
+- Reader process
+![reader process output](images/reader_process.png)
 ## CLEANING UP SHARED MEMORY (if needed)
 
 For Listing shared memory segments

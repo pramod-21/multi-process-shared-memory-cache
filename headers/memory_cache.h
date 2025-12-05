@@ -7,7 +7,7 @@
 #include<semaphore.h>
 
 #define SHARED_MEMORY_KEY 0x1234
-#define CACHE_SIZE 128
+#define CACHE_SIZE 5
 #define VALUE_SIZE 256
 
 typedef struct {
