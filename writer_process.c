@@ -29,32 +29,25 @@ int main()
 
     printf("Writer Process %d started", getpid());
 
+    int key;
+    char value[VALUE_SIZE];
     // writing data to cache in an infinite loop
     while (1)
     {
-        int key;
-        char value[VALUE_SIZE];
-
-        key = rand() % 100; // random key between 0 and 99
-        printf("\n[Writer %d] Generated random key: %d\n", getpid(), key);
-
-        printf("Enter value (string) or 'exit' to stop: ");
-
-        if (fgets(value, sizeof(value), stdin) == NULL)
+        printf("\n[Writer %d] Enter key (integer): ", getpid());
+        if (scanf("%d", &key) != 1)
         {
-            printf("Input error. Try again.\n");
-            clearerr(stdin); //reset stdin error state so next input works
+            printf("Invalid input. Please enter an integer for key.\n");
+            while (getchar() != '\n')
+                ; // clear invalid input
             continue;
         }
 
-        // removing newline character from the input
-        value[strcspn(value, "\n")] = '\0';
+        printf("Enter value (no spaces, or 'exit' to quit): ");
+        scanf("%s", value);
 
         if (strcmp(value, "exit") == 0)
-        {
-            printf("Writer Process %d exiting... and exited :)\n", getpid());
             break;
-        }
 
         int result = cache_put(cache, key, value);
         /*1 for insert
