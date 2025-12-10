@@ -9,6 +9,7 @@
 
 int main()
 {
+    // seed random number generator uniquely for each writer
     srand(time(NULL) ^ getpid());
 
     int shmid = shmget(SHARED_MEMORY_KEY, 0, 0666);
@@ -34,29 +35,25 @@ int main()
         int key;
         char value[VALUE_SIZE];
 
-        printf("\nEnter key (int) or -1 to exit: ");
-        if (scanf("%d", &key) != 1)
+        key = rand() % 100; // random key between 0 and 99
+        printf("\n[Writer %d] Generated random key: %d\n", getpid(), key);
+
+        printf("Enter value (string) or 'exit' to stop: ");
+
+        if (fgets(value, sizeof(value), stdin) == NULL)
         {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
+            printf("Input error. Try again.\n");
+            clearerr(stdin); //reset stdin error state so next input works
             continue;
-        }
-        if (key == -1)
-        {
-            printf("Writer %d exiting...\n", getpid());
-            break;
         }
 
-        printf("Enter value (string): ");
-        if (scanf("%255s", value) != 1)
+        // removing newline character from the input
+        value[strcspn(value, "\n")] = '\0';
+
+        if (strcmp(value, "exit") == 0)
         {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            continue;
+            printf("Writer Process %d exiting... and exited :)\n", getpid());
+            break;
         }
 
         int result = cache_put(cache, key, value);

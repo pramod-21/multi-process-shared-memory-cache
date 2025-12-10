@@ -1,12 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "memory_cache.h"
 #include "shared_memory_manager.h"
 
 int main()
 {
+    // seed random number generator uniquely for each reader
+    srand(time(NULL) ^ getpid());
+
     int shmid = shmget(SHARED_MEMORY_KEY, 0, 0666);
     if (shmid < 0)
     {
@@ -20,41 +25,43 @@ int main()
         printf("Reader : %d Failed to attach shared memory\n", getpid());
         exit(1);
     }
-    cache_init(cache); // initializing the cache
-    printf("Reader Process %d started", getpid());
+
+    cache_init(cache); // initializing the cache if not initialized
+    printf("Reader Process %d started\n", getpid());
 
     while (1)
     {
-        int key;
+        char cmd[16];
+        printf("Enter 'exit' to stop/quit reader %d or press Enter to continue: ", getpid());
+        if (fgets(cmd, sizeof(cmd), stdin) != NULL)
+        {
+            if (strncmp(cmd, "exit", 4) == 0)
+            {
+                printf("Reader Process %d exiting... and exited :)\n", getpid());
+                break;
+            }
+        }
+        int key = rand() % 100;
         char out[VALUE_SIZE];
 
-        printf("\nEnter key to read (int) or -1 to exit: ");
-        if (scanf("%d", &key) != 1)
-        {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF)
-            {
-            }
-            continue;
-        }
-        if (key == -1)
-        {
-            printf("reader %d exiting...\n", getpid());
-            break;
-        }
+        printf("\n[Reader %d] Generated key=%d\n", getpid(), key);
 
         int hit = cache_get(cache, key, out);
+
         if (hit == 1)
         {
-            printf("[Reader %d]: Key=%d found with value=%s\n", getpid(), key, out);
+            printf("[Reader %d]: Key=%d found with value=%s\n",
+                   getpid(), key, out);
         }
         else
         {
-            printf("[Reader %d]: Key=%d not found in cache\n", getpid(), key);
+            printf("[Reader %d]: Key=%d not found in cache\n",
+                   getpid(), key);
         }
 
         sleep(1);
     }
+
     shared_memory_detach(cache);
     return 0;
 }
